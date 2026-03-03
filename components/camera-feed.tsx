@@ -274,6 +274,22 @@ function getSignVideo(text: string): string | null {
   return null
 }
 
+/* ─── RESPONSIVE ORIENTATION HOOK ─── */
+function useIsPortrait() {
+  const [isPortrait, setIsPortrait] = useState(false)
+  useEffect(() => {
+    const check = () => setIsPortrait(window.innerHeight > window.innerWidth)
+    check()
+    window.addEventListener("resize", check)
+    window.addEventListener("orientationchange", check)
+    return () => {
+      window.removeEventListener("resize", check)
+      window.removeEventListener("orientationchange", check)
+    }
+  }, [])
+  return isPortrait
+}
+
 export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProps) {
   const videoRef     = useRef<HTMLVideoElement>(null)
   const canvasRef    = useRef<HTMLCanvasElement>(null)
@@ -283,6 +299,8 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
   const lastDetRef   = useRef(0)
   // ref สำหรับ video ใน panel ตอบโต้
   const replyVideoRef = useRef<HTMLVideoElement>(null)
+
+  const isPortrait = useIsPortrait()
 
   const [cameraOn,      setCameraOn]      = useState(false)
   const [handsActive,   setHandsActive]   = useState(false)
@@ -464,9 +482,9 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
 
       {/* CAMERA */}
       <div className="rounded-3xl overflow-hidden bg-white/80 backdrop-blur-2xl border border-white/70 shadow-[0_12px_48px_rgba(59,130,246,0.12)]">
-        <div className="m-2.5 relative rounded-[22px] overflow-hidden bg-gradient-to-br from-blue-100 via-sky-100 to-indigo-100" style={{aspectRatio:"16/9"}}>
+        <div className="m-2.5 relative rounded-[22px] overflow-hidden bg-gradient-to-br from-blue-100 via-sky-100 to-indigo-100" style={{aspectRatio: isPortrait ? "3/4" : "16/9"}}>
           <video ref={videoRef} autoPlay playsInline muted className="hidden"/>
-          <canvas ref={canvasRef} width={1280} height={720}
+          <canvas ref={canvasRef} width={isPortrait ? 720 : 1280} height={isPortrait ? 960 : 720}
             className={`absolute inset-0 w-full h-full object-cover rounded-[22px] ${!cameraOn?"hidden":""}`}
             style={{transform:facingMode==="user"?"scaleX(-1)":"none"}}/>
 
