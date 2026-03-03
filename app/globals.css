@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-k2d), "Sarabun", sans-serif;
+  --color-brand-green: #22c55e;
+  --color-brand-blue: #1e40af;
+}
+
+/* บังคับให้ทุกอย่างใช้ฟอนต์นี้ */
+:root {
+  font-family: var(--font-k2d), "Sarabun", sans-serif;
+}
+
+body {
+  @apply bg-[#fcfdfd] text-slate-900;
+}
