@@ -349,10 +349,27 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
 
     hands.onResults((results: any) => {
       const canvas = canvasRef.current; if (!canvas) return
+
+      // ปรับ resolution canvas ให้ตรงกับขนาดที่แสดงจริง
+      const rect = canvas.getBoundingClientRect()
+      if (canvas.width !== Math.round(rect.width) || canvas.height !== Math.round(rect.height)) {
+        canvas.width  = Math.round(rect.width)
+        canvas.height = Math.round(rect.height)
+      }
       const ctx = canvas.getContext("2d")!
       ctx.save()
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height)
+
+      // วาดภาพแบบ cover — crop กลาง ไม่บีบ
+      const src = results.image
+      const sw = src.width ?? src.videoWidth ?? canvas.width
+      const sh = src.height ?? src.videoHeight ?? canvas.height
+      const scale = Math.max(canvas.width / sw, canvas.height / sh)
+      const dw = sw * scale
+      const dh = sh * scale
+      const dx = (canvas.width - dw) / 2
+      const dy = (canvas.height - dh) / 2
+      ctx.drawImage(src, dx, dy, dw, dh)
 
       if (results.multiHandLandmarks?.length) {
         for (const lm of results.multiHandLandmarks) {
@@ -486,13 +503,10 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
         >
           <video ref={videoRef} autoPlay playsInline muted className="hidden"/>
           <canvas ref={canvasRef} width={1280} height={720}
-            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[22px] ${!cameraOn?"hidden":""}`}
+            className={`absolute inset-0 w-full h-full rounded-[22px] ${!cameraOn?"hidden":""}`}
             style={{
-              transform: `translate(-50%, -50%) ${facingMode==="user"?"scaleX(-1)":""}`,
-              width: isMobile ? "auto" : "100%",
-              height: isMobile ? "100%" : "auto",
-              minWidth: isMobile ? "100%" : undefined,
-              minHeight: isMobile ? undefined : "100%",
+              transform: facingMode==="user" ? "scaleX(-1)" : "none",
+              objectFit: "cover",
             }}/>
 
           {!cameraOn && (
