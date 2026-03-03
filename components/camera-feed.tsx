@@ -274,20 +274,17 @@ function getSignVideo(text: string): string | null {
   return null
 }
 
-/* ─── RESPONSIVE ORIENTATION HOOK ─── */
-function useIsPortrait() {
-  const [isPortrait, setIsPortrait] = useState(false)
+
+/* ─── MOBILE DETECTION HOOK ─── */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
   useEffect(() => {
-    const check = () => setIsPortrait(window.innerHeight > window.innerWidth)
+    const check = () => setIsMobile(window.innerWidth < 768)
     check()
     window.addEventListener("resize", check)
-    window.addEventListener("orientationchange", check)
-    return () => {
-      window.removeEventListener("resize", check)
-      window.removeEventListener("orientationchange", check)
-    }
+    return () => window.removeEventListener("resize", check)
   }, [])
-  return isPortrait
+  return isMobile
 }
 
 export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProps) {
@@ -300,7 +297,8 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
   // ref สำหรับ video ใน panel ตอบโต้
   const replyVideoRef = useRef<HTMLVideoElement>(null)
 
-  const isPortrait = useIsPortrait()
+  const isMobile = useIsMobile()
+
 
   const [cameraOn,      setCameraOn]      = useState(false)
   const [handsActive,   setHandsActive]   = useState(false)
@@ -482,11 +480,20 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
 
       {/* CAMERA */}
       <div className="rounded-3xl overflow-hidden bg-white/80 backdrop-blur-2xl border border-white/70 shadow-[0_12px_48px_rgba(59,130,246,0.12)]">
-        <div className="m-2.5 relative rounded-[22px] overflow-hidden bg-gradient-to-br from-blue-100 via-sky-100 to-indigo-100" style={{aspectRatio: isPortrait ? "3/4" : "16/9"}}>
+        <div
+          className="m-2.5 relative rounded-[22px] overflow-hidden bg-gradient-to-br from-blue-100 via-sky-100 to-indigo-100"
+          style={{aspectRatio: isMobile ? "3/4" : "16/9"}}
+        >
           <video ref={videoRef} autoPlay playsInline muted className="hidden"/>
-          <canvas ref={canvasRef} width={isPortrait ? 720 : 1280} height={isPortrait ? 960 : 720}
-            className={`absolute inset-0 w-full h-full object-cover rounded-[22px] ${!cameraOn?"hidden":""}`}
-            style={{transform:facingMode==="user"?"scaleX(-1)":"none"}}/>
+          <canvas ref={canvasRef} width={1280} height={720}
+            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[22px] ${!cameraOn?"hidden":""}`}
+            style={{
+              transform: `translate(-50%, -50%) ${facingMode==="user"?"scaleX(-1)":""}`,
+              width: isMobile ? "auto" : "100%",
+              height: isMobile ? "100%" : "auto",
+              minWidth: isMobile ? "100%" : undefined,
+              minHeight: isMobile ? undefined : "100%",
+            }}/>
 
           {!cameraOn && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-5">
