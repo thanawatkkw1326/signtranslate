@@ -55,6 +55,7 @@ function StatCard({ title, value, unit, icon, trend, trendValue }: {
 
 interface UserActivity {
   id: string;
+  email: string | null;
   full_name: string | null;
   avatar_url: string | null;
   total_translations: number;
@@ -62,7 +63,8 @@ interface UserActivity {
   joined_at: string;
 }
 
-const DAYS = ["จ", "อ", "พ", "พฤ", "ศ", "ส", "อา"];
+// ปรับให้เรียงวันตาม getDay() ของ JavaScript (0 = อาทิตย์)
+const DAYS = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
 export default function AdminPage() {
   const router = useRouter();
@@ -71,11 +73,15 @@ export default function AdminPage() {
   const [adminName, setAdminName] = useState("Admin");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [stats, setStats] = useState({ totalTranslations: 0, accuracy: 99.2, activeUsers: 0, avgResponseTime: 0.4 });
-  const [chartData, setChartData] = useState([40, 70, 45, 90, 65, 80, 50]);
+  const [chartData, setChartData] = useState([0, 0, 0, 0, 0, 0, 0]);
   const [chartRaw, setChartRaw] = useState([0, 0, 0, 0, 0, 0, 0]);
+  const [chartDays, setChartDays] = useState<string[]>(["", "", "", "", "", "", ""]);
   const [userActivity, setUserActivity] = useState<UserActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [activityLoading, setActivityLoading] = useState(true);
+  
+  // State สำหรับค้นหาผู้ใช้
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const init = async () => {
@@ -89,17 +95,23 @@ export default function AdminPage() {
       if (profile?.full_name) setAdminName(profile.full_name);
       if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
 
+      // ดึงข้อมูลภาพรวม (Stats) จากฐานข้อมูลจริง
       const { count: totalTranslations } = await supabase
         .from("translations").select("*", { count: "exact", head: true });
 
       const { count: activeUsers } = await supabase
         .from("profiles").select("*", { count: "exact", head: true }).eq("role", "user");
 
+      // ดึงข้อมูลทำกราฟย้อนหลัง 7 วัน
       const now = new Date();
+      const dynamicDays: string[] = [];
       const weekData = await Promise.all(
         Array.from({ length: 7 }, async (_, i) => {
           const d = new Date(now);
           d.setDate(d.getDate() - (6 - i));
+          
+          dynamicDays.push(DAYS[d.getDay()]); // เก็บชื่อวันให้ตรงกับความเป็นจริง
+
           const start = new Date(new Date(d).setHours(0, 0, 0, 0)).toISOString();
           const end = new Date(new Date(d).setHours(23, 59, 59, 999)).toISOString();
           const { count } = await supabase.from("translations")
@@ -108,43 +120,57 @@ export default function AdminPage() {
           return count ?? 0;
         })
       );
+      
+      setChartDays(dynamicDays);
       const maxVal = Math.max(...weekData, 1);
       setChartRaw(weekData);
       setChartData(weekData.map((v) => Math.round((v / maxVal) * 85) + 5));
       setStats({ totalTranslations: totalTranslations ?? 0, accuracy: 99.2, activeUsers: activeUsers ?? 0, avgResponseTime: 0.4 });
       setLoading(false);
 
-      // User activity
-      const { data: profiles } = await supabase
-        .from("profiles").select("id, full_name, avatar_url, created_at")
-        .eq("role", "user").order("created_at", { ascending: false }).limit(20);
+      // ดึงข้อมูลผู้ใช้ลงตาราง
+      const fetchUsers = async () => {
+        setActivityLoading(true);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, email, full_name, avatar_url, created_at, role")
+          .eq("role", "user")
+          .order("created_at", { ascending: false })
+          .limit(20);
 
-      if (profiles) {
-        const activities = await Promise.all(
-          profiles.map(async (p) => {
-            const { count } = await supabase
-              .from("translations").select("*", { count: "exact", head: true }).eq("user_id", p.id);
-            const { data: lastTx } = await supabase
-              .from("translations").select("created_at").eq("user_id", p.id)
-              .order("created_at", { ascending: false }).limit(1).maybeSingle();
-            return {
-              id: p.id,
-              full_name: p.full_name,
-              avatar_url: p.avatar_url,
-              total_translations: count ?? 0,
-              last_active: lastTx?.created_at ?? null,
-              joined_at: p.created_at,
-            } as UserActivity;
-          })
-        );
-        // Sort by most active
-        activities.sort((a, b) => b.total_translations - a.total_translations);
-        setUserActivity(activities);
-      }
-      setActivityLoading(false);
+        if (profiles && profiles.length > 0) {
+          const activities = await Promise.all(
+            profiles.map(async (p) => {
+              const { count } = await supabase
+                .from("translations").select("*", { count: "exact", head: true }).eq("user_id", p.id);
+              const { data: lastTx } = await supabase
+                .from("translations").select("created_at").eq("user_id", p.id)
+                .order("created_at", { ascending: false }).limit(1).maybeSingle();
+              return {
+                id: p.id,
+                email: p.email,
+                full_name: p.full_name,
+                avatar_url: p.avatar_url,
+                total_translations: count ?? 0,
+                last_active: lastTx?.created_at ?? null,
+                joined_at: p.created_at,
+              } as UserActivity;
+            })
+          );
+          // เรียงตามคนที่แปลเยอะสุดขึ้นก่อน
+          activities.sort((a, b) => b.total_translations - a.total_translations);
+          setUserActivity(activities);
+        } else {
+          setUserActivity([]);
+        }
+        setActivityLoading(false);
+      };
+
+      await fetchUsers();
     };
+
     init();
-  }, []);
+  }, []); // ลบ useEffect ตัวที่ 2 ที่ซ้ำซ้อนทิ้งไป ให้ทำในครั้งแรกครั้งเดียว
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -171,9 +197,15 @@ export default function AdminPage() {
 
   const maxTx = Math.max(...userActivity.map((u) => u.total_translations), 1);
 
+  // กรองผู้ใช้ด้วยช่องค้นหาแบบ Client-side (รวดเร็วทันใจ)
+  const filteredUsers = userActivity.filter(u => 
+    searchQuery === "" || 
+    (u.email && u.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (u.full_name && u.full_name.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-slate-50 via-blue-50/30 to-sky-50/20 text-slate-800">
-
       {/* Sidebar */}
       <aside className="w-20 lg:w-64 bg-slate-900 text-white flex flex-col shrink-0 shadow-2xl">
         <div className="p-6 flex items-center gap-3 border-b border-white/5">
@@ -188,9 +220,7 @@ export default function AdminPage() {
 
         <nav className="flex-1 px-4 py-6 space-y-2">
           <SideItem icon={<LayoutDashboard size={20} />} label="แดชบอร์ด" active href="/dashboard/admin" />
-          <SideItem icon={<MessageSquare size={20} />} label="ประวัติการแปล" href="/dashboard/admin/history" />
           <SideItem icon={<Users size={20} />} label="ผู้ใช้งาน" href="/dashboard/admin/users" />
-          <SideItem icon={<Cpu size={20} />} label="สถานะ AI" href="/dashboard/admin/ai" />
         </nav>
 
         <div className="p-4 border-t border-white/5 space-y-3">
@@ -240,7 +270,6 @@ export default function AdminPage() {
         </header>
 
         <div className="p-8 space-y-8">
-
           {/* Stats */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-5">
             <StatCard title="การแปลทั้งหมด" value={loading ? "—" : fmt(stats.totalTranslations)} unit={loading ? "" : fmtUnit(stats.totalTranslations)} icon={<MessageSquare size={20} />} trend="up" trendValue="+12%" />
@@ -270,7 +299,7 @@ export default function AdminPage() {
                       style={{ height: `${Math.max(h * 2, 8)}px` }}
                     />
                   </div>
-                  <span className="text-xs text-slate-400 font-medium">{DAYS[i]}</span>
+                  <span className="text-xs text-slate-400 font-medium">{chartDays[i]}</span>
                 </div>
               ))}
             </div>
@@ -278,7 +307,7 @@ export default function AdminPage() {
 
           {/* User Activity Table */}
           <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
+            <div className="px-8 py-6 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
                   <Eye size={18} className="text-sky-500" />
@@ -286,10 +315,22 @@ export default function AdminPage() {
                 </h3>
                 <p className="text-sm text-slate-400 mt-0.5">ดูข้อมูลจริงแบบ read-only • เรียงตามจำนวนการแปลมากสุด</p>
               </div>
-              <span className="text-xs bg-emerald-50 text-emerald-600 font-semibold px-3 py-1.5 rounded-full border border-emerald-100 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse inline-block" />
-                Live
-              </span>
+              
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="ค้นหาด้วยอีเมล หรือชื่อ..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-4 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all w-full md:w-64"
+                  />
+                </div>
+                <span className="text-xs bg-emerald-50 text-emerald-600 font-semibold px-3 py-2 rounded-xl border border-emerald-100 flex items-center gap-1.5 shrink-0">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse inline-block" />
+                  Live
+                </span>
+              </div>
             </div>
 
             {activityLoading ? (
@@ -297,10 +338,10 @@ export default function AdminPage() {
                 <div className="w-8 h-8 border-2 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-slate-400 text-sm">กำลังโหลดข้อมูลผู้ใช้...</p>
               </div>
-            ) : userActivity.length === 0 ? (
+            ) : filteredUsers.length === 0 ? (
               <div className="p-16 text-center">
                 <Users size={40} className="mx-auto text-slate-200 mb-3" />
-                <p className="text-slate-400 font-medium">ยังไม่มีผู้ใช้งาน</p>
+                <p className="text-slate-400 font-medium">ไม่พบผู้ใช้งาน</p>
               </div>
             ) : (
               <>
@@ -315,20 +356,15 @@ export default function AdminPage() {
 
                 {/* Rows */}
                 <div className="divide-y divide-slate-50/80">
-                  {userActivity.map((u, idx) => (
+                  {filteredUsers.map((u, idx) => (
                     <div key={u.id} className="grid grid-cols-12 px-8 py-4 items-center hover:bg-blue-50/30 transition-colors duration-150">
-
+                      
                       {/* Rank */}
                       <div className="col-span-1 text-center">
-                        {idx === 0 ? (
-                          <span className="text-base">🥇</span>
-                        ) : idx === 1 ? (
-                          <span className="text-base">🥈</span>
-                        ) : idx === 2 ? (
-                          <span className="text-base">🥉</span>
-                        ) : (
-                          <span className="text-sm font-bold text-slate-300">{idx + 1}</span>
-                        )}
+                        {idx === 0 ? <span className="text-base">🥇</span> : 
+                         idx === 1 ? <span className="text-base">🥈</span> : 
+                         idx === 2 ? <span className="text-base">🥉</span> : 
+                         <span className="text-sm font-bold text-slate-300">{idx + 1}</span>}
                       </div>
 
                       {/* User */}
@@ -341,7 +377,7 @@ export default function AdminPage() {
                               className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white"
                               style={{ background: `hsl(${(idx * 53 + 200) % 360}, 55%, 58%)` }}
                             >
-                              {(u.full_name ?? "?").charAt(0).toUpperCase()}
+                              {(u.full_name || u.email || "?").charAt(0).toUpperCase()}
                             </div>
                           )}
                           {isActiveToday(u.last_active) && (
@@ -349,7 +385,7 @@ export default function AdminPage() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-800 truncate">{u.full_name ?? "ไม่ระบุชื่อ"}</p>
+                          <p className="text-sm font-semibold text-slate-800 truncate">{u.full_name || u.email || "ไม่ระบุชื่อ"}</p>
                           <p className="text-xs text-slate-300 font-mono">{u.id.slice(0, 8)}…</p>
                         </div>
                       </div>
@@ -387,7 +423,7 @@ export default function AdminPage() {
                 </div>
 
                 <div className="px-8 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-                  <p className="text-xs text-slate-400">แสดง {userActivity.length} ผู้ใช้ล่าสุด</p>
+                  <p className="text-xs text-slate-400">แสดง {filteredUsers.length} ผู้ใช้</p>
                   <Link href="/dashboard/admin/users">
                     <span className="text-xs text-sky-600 font-semibold hover:text-sky-700 transition">ดูทั้งหมด →</span>
                   </Link>
@@ -395,7 +431,6 @@ export default function AdminPage() {
               </>
             )}
           </div>
-
         </div>
       </main>
     </div>

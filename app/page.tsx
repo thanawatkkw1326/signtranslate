@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { Mail, Phone, MapPin, Globe, Github } from "lucide-react";
 
 const APP_SLIDES = [
   { src: "/hand1.jpg", label: "Gesture Recognition" },
@@ -88,7 +89,6 @@ export default function AppLandingPage() {
             linear-gradient(170deg, #edfdf7 0%, #f0f8ff 50%, #f0faf6 100%);
         }
 
-        /* subtle dot grid */
         .lp-grid {
           position: fixed; inset: 0; z-index: 0; pointer-events: none;
           background-image: radial-gradient(circle, rgba(16,185,129,0.18) 1px, transparent 1px);
@@ -97,7 +97,6 @@ export default function AppLandingPage() {
           opacity: 0.5;
         }
 
-        /* ── FLOATING BLOBS ── */
         .blob {
           position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
           animation: blobDrift ease-in-out infinite alternate;
@@ -112,7 +111,6 @@ export default function AppLandingPage() {
           to   { transform: translate(22px, 30px) scale(1.08); }
         }
 
-        /* ── WRAPPER ── */
         .lp-wrap {
           position: relative; z-index: 2;
           max-width: 430px; margin: 0 auto;
@@ -121,7 +119,6 @@ export default function AppLandingPage() {
           padding: 0 20px 52px;
         }
 
-        /* ── TOP STATUS BAR PILL ── */
         .lp-topbar {
           display: flex; justify-content: center; padding: 20px 0 0;
           animation: revealUp 0.6s cubic-bezier(0.16,1,0.3,1) both;
@@ -147,7 +144,6 @@ export default function AppLandingPage() {
           50%      { box-shadow: 0 0 0 6px rgba(16,185,129,0.08); }
         }
 
-        /* ── IDENTITY ── */
         .lp-identity {
           display: flex; flex-direction: column; align-items: center;
           text-align: center; padding: 32px 0 28px;
@@ -155,9 +151,8 @@ export default function AppLandingPage() {
         }
 
         .lp-logo-ring {
-          position: relative; width: 88px; height: 88px; margin-bottom: 18px;
+          position: relative; width: 200px; height: 200px; margin-bottom: 18px;
         }
-        /* outer spinning ring */
         .lp-logo-ring::before {
           content: '';
           position: absolute; inset: -5px;
@@ -218,7 +213,6 @@ export default function AppLandingPage() {
           box-shadow: var(--shadow-card), 0 0 0 1px rgba(16,185,129,0.12);
         }
 
-        /* premium inner border overlay */
         .lp-slide-window::after {
           content: ''; position: absolute; inset: 0; z-index: 6; pointer-events: none;
           border-radius: inherit;
@@ -226,7 +220,6 @@ export default function AppLandingPage() {
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.04);
         }
 
-        /* top glare */
         .lp-slide-glare {
           position: absolute; top: 0; left: 0; right: 0; height: 45%; z-index: 5; pointer-events: none;
           background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 100%);
@@ -254,7 +247,6 @@ export default function AppLandingPage() {
           box-shadow: 0 4px 16px rgba(37,99,235,0.1);
         }
 
-        /* Progress bar under slide */
         .lp-progress-bar {
           height: 3px; width: 100%; background: rgba(16,185,129,0.12);
           border-radius: 3px; margin-top: 12px; overflow: hidden;
@@ -311,7 +303,6 @@ export default function AppLandingPage() {
           background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
           pointer-events: none;
         }
-        /* animated sheen */
         .btn-main::after {
           content: '';
           position: absolute; top: 0; left: -80%; width: 50%; height: 100%;
@@ -332,96 +323,6 @@ export default function AppLandingPage() {
           font-size: 16px; flex-shrink: 0;
         }
 
-        /* ── STATS STRIP ── */
-        .lp-stats {
-          display: flex; background: var(--card);
-          border-radius: 20px; margin-bottom: 20px;
-          box-shadow: var(--shadow-card);
-          border: 1px solid rgba(16,185,129,0.10);
-          overflow: hidden;
-          animation: revealUp 0.7s 0.25s cubic-bezier(0.16,1,0.3,1) both;
-        }
-        .lp-stat {
-          flex: 1; padding: 16px 8px;
-          display: flex; flex-direction: column; align-items: center; gap: 3px;
-          position: relative;
-        }
-        .lp-stat + .lp-stat::before {
-          content: ''; position: absolute; left: 0; top: 16%; height: 68%;
-          width: 1px; background: rgba(16,185,129,0.12);
-        }
-        .lp-stat-num {
-          font-family: 'Syne', sans-serif;
-          font-size: 1.2rem; font-weight: 800;
-          background: linear-gradient(135deg, var(--green-d), var(--blue));
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-        }
-        .lp-stat-lbl {
-          font-size: 0.62rem; font-weight: 600; letter-spacing: 0.07em;
-          text-transform: uppercase; color: var(--text-3);
-          text-align: center;
-        }
-
-        /* ── CONTACT CARD ── */
-        .lp-contact {
-          background: var(--card);
-          border-radius: var(--r-xl);
-          box-shadow: var(--shadow-card);
-          border: 1px solid rgba(37,99,235,0.08);
-          overflow: hidden;
-          animation: revealUp 0.7s 0.3s cubic-bezier(0.16,1,0.3,1) both;
-        }
-
-        .lp-contact-header {
-          padding: 20px 20px 0;
-          display: flex; align-items: center; gap: 10px;
-        }
-        .lp-contact-icon-wrap {
-          width: 36px; height: 36px; border-radius: 12px; flex-shrink: 0;
-          background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(37,99,235,0.12));
-          display: flex; align-items: center; justify-content: center; font-size: 17px;
-        }
-        .lp-contact-title {
-          font-family: 'Syne', sans-serif;
-          font-size: 1rem; font-weight: 800; color: var(--text-1);
-        }
-        .lp-contact-sub {
-          font-size: 0.72rem; color: var(--text-3); font-weight: 500; margin-left: auto;
-        }
-
-        .lp-contact-list { padding: 14px 12px 16px; display: flex; flex-direction: column; gap: 8px; }
-
-        .lp-clink {
-          display: flex; align-items: center; gap: 12px;
-          padding: 14px 14px;
-          border-radius: 16px;
-          background: linear-gradient(135deg, #f8fffe 0%, #f0f8ff 100%);
-          border: 1px solid rgba(16,185,129,0.10);
-          text-decoration: none; color: var(--text-1);
-          transition: all 0.2s;
-        }
-        .lp-clink:active { background: rgba(16,185,129,0.06); border-color: rgba(16,185,129,0.25); }
-
-        .lp-clink-icon {
-          width: 40px; height: 40px; border-radius: 13px; flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center; font-size: 19px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-        .lp-clink-text b  { display: block; font-size: 0.88rem; font-weight: 700; color: var(--text-1); }
-        .lp-clink-text span { font-size: 0.73rem; color: var(--text-3); font-weight: 500; }
-
-        .lp-arrow {
-          margin-left: auto; font-size: 0.8rem;
-          color: var(--text-3); flex-shrink: 0;
-        }
-
-        /* ── COPYRIGHT ── */
-        .lp-copy {
-          text-align: center; margin-top: 32px;
-          font-size: 0.67rem; font-weight: 500; letter-spacing: 0.07em;
-          color: var(--text-3); text-transform: uppercase;
-        }
-
         /* ── ANIMATIONS ── */
         @keyframes revealUp {
           from { opacity: 0; transform: translateY(24px); }
@@ -440,6 +341,347 @@ export default function AppLandingPage() {
           80%   { opacity: 0.6; }
           100%  { opacity: 0; transform: translateY(-100px) scale(1.5); }
         }
+
+        /* ═══════════════════════════════════════
+           ✨ NEW PREMIUM FOOTER STYLES
+        ═══════════════════════════════════════ */
+
+        .lp-footer {
+          animation: revealUp 0.7s 0.35s cubic-bezier(0.16,1,0.3,1) both;
+          margin-top: 8px;
+          position: relative;
+        }
+
+        /* ── Glow divider ── */
+        .footer-divider {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 28px;
+        }
+        .footer-divider-line {
+          flex: 1;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(16,185,129,0.3), rgba(37,99,235,0.3), transparent);
+        }
+        .footer-divider-gem {
+          width: 28px; height: 28px;
+          background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(37,99,235,0.12));
+          border: 1px solid rgba(16,185,129,0.25);
+          border-radius: 8px;
+          transform: rotate(45deg);
+          margin: 0 12px;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 2px 12px rgba(16,185,129,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
+          flex-shrink: 0;
+          position: relative;
+        }
+        .footer-divider-gem::after {
+          content: '';
+          position: absolute; inset: 4px;
+          background: linear-gradient(135deg, var(--green-l), var(--blue-l));
+          border-radius: 3px;
+          opacity: 0.6;
+        }
+
+        /* ── Brand strip inside footer ── */
+        .footer-brand {
+          text-align: center;
+          margin-bottom: 24px;
+        }
+        .footer-brand-name {
+          font-family: 'Syne', sans-serif;
+          font-size: 1.15rem;
+          font-weight: 800;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          background: linear-gradient(90deg, var(--green-d) 0%, var(--green) 40%, var(--blue-l) 80%, var(--blue) 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          background-size: 200% auto;
+          animation: gradientShift 4s linear infinite;
+        }
+        @keyframes gradientShift {
+          0%   { background-position: 0% center; }
+          100% { background-position: 200% center; }
+        }
+        .footer-brand-tagline {
+          font-size: 0.67rem;
+          font-weight: 600;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: var(--text-3);
+          margin-top: 4px;
+        }
+
+        /* ── Contact cards grid ── */
+        .footer-contacts {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 16px;
+        }
+
+        .footer-contact-card {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          padding: 16px 12px;
+          background: rgba(255, 255, 255, 0.65);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-radius: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          box-shadow:
+            0 4px 24px rgba(15,31,46,0.05),
+            inset 0 1px 0 rgba(255,255,255,0.9),
+            inset 0 -1px 0 rgba(16,185,129,0.06);
+          text-decoration: none;
+          overflow: hidden;
+          transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+          cursor: pointer;
+        }
+        .footer-contact-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 2px;
+          border-radius: 20px 20px 0 0;
+          opacity: 0;
+          transition: opacity 0.3s;
+        }
+        .footer-contact-card.email::before {
+          background: linear-gradient(90deg, var(--blue), var(--blue-l));
+        }
+        .footer-contact-card.phone::before {
+          background: linear-gradient(90deg, var(--green-d), var(--green-l));
+        }
+        .footer-contact-card:active {
+          transform: scale(0.97);
+          box-shadow: 0 2px 12px rgba(15,31,46,0.08);
+        }
+
+        .footer-card-icon-wrap {
+          width: 44px; height: 44px;
+          border-radius: 14px;
+          display: flex; align-items: center; justify-content: center;
+          position: relative;
+          overflow: hidden;
+        }
+        .footer-card-icon-wrap.email-icon {
+          background: linear-gradient(135deg, #dbeafe, #eff6ff);
+          box-shadow: 0 4px 12px rgba(37,99,235,0.15);
+        }
+        .footer-card-icon-wrap.phone-icon {
+          background: linear-gradient(135deg, #d1fae5, #ecfdf5);
+          box-shadow: 0 4px 12px rgba(16,185,129,0.15);
+        }
+        .footer-card-icon-wrap::after {
+          content: '';
+          position: absolute; inset: 0;
+          background: linear-gradient(135deg, rgba(255,255,255,0.5), transparent);
+          border-radius: inherit;
+        }
+
+        .footer-card-label {
+          font-size: 0.72rem;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: var(--text-2);
+          text-align: center;
+        }
+        .footer-card-value {
+          font-size: 0.67rem;
+          font-weight: 500;
+          color: var(--text-3);
+          text-align: center;
+          margin-top: -4px;
+        }
+
+        /* ── Location full-width pill ── */
+        .footer-location {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 18px;
+          background: rgba(255, 255, 255, 0.55);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-radius: 18px;
+          border: 1px solid rgba(255,255,255,0.75);
+          box-shadow:
+            0 4px 20px rgba(15,31,46,0.04),
+            inset 0 1px 0 rgba(255,255,255,0.9);
+          margin-bottom: 10px;
+          text-decoration: none;
+        }
+        .footer-location-icon {
+          width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;
+          background: linear-gradient(135deg, #fef3c7, #fff7ed);
+          box-shadow: 0 4px 12px rgba(245,158,11,0.15);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 18px;
+          position: relative;
+        }
+        .footer-location-icon::after {
+          content: '';
+          position: absolute; inset: 0;
+          background: linear-gradient(135deg, rgba(255,255,255,0.5), transparent);
+          border-radius: inherit;
+        }
+        .footer-location-text { flex: 1; }
+        .footer-location-text b {
+          display: block;
+          font-size: 0.78rem; font-weight: 700; color: var(--text-1);
+        }
+        .footer-location-text span {
+          font-size: 0.66rem; font-weight: 500; color: var(--text-3);
+        }
+        .footer-location-arrow {
+          width: 28px; height: 28px; border-radius: 9px;
+          background: rgba(16,185,129,0.08);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.65rem;
+          color: var(--green-d);
+          flex-shrink: 0;
+        }
+
+        /* ── Tech chips ── */
+        .footer-tech-row {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          margin-bottom: 22px;
+          flex-wrap: wrap;
+        }
+        .footer-tech-chip {
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 5px 11px;
+          background: rgba(255,255,255,0.7);
+          border: 1px solid rgba(16,185,129,0.12);
+          border-radius: 100px;
+          font-size: 0.62rem; font-weight: 700;
+          letter-spacing: 0.06em; text-transform: uppercase;
+          color: var(--text-2);
+          box-shadow: 0 2px 8px rgba(15,31,46,0.04);
+        }
+        .footer-tech-chip-dot {
+          width: 5px; height: 5px; border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        /* ── Copyright banner ── */
+        .footer-copyright {
+          position: relative;
+          overflow: hidden;
+          background: linear-gradient(135deg,
+            rgba(16,185,129,0.06) 0%,
+            rgba(37,99,235,0.05) 50%,
+            rgba(16,185,129,0.04) 100%
+          );
+          border: 1px solid rgba(16,185,129,0.10);
+          border-radius: 18px;
+          padding: 16px 20px;
+          text-align: center;
+        }
+        .footer-copyright::before {
+          content: '';
+          position: absolute; top: 0; left: -100%; right: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(16,185,129,0.4), rgba(37,99,235,0.3), transparent);
+          animation: scanLine 4s linear infinite;
+        }
+        @keyframes scanLine {
+          from { left: -100%; }
+          to   { left: 100%; }
+        }
+        .footer-copyright-year {
+          font-family: 'Syne', sans-serif;
+          font-size: 0.85rem; font-weight: 800;
+          color: var(--text-1);
+          letter-spacing: 0.05em;
+        }
+        .footer-copyright-year span {
+          background: linear-gradient(90deg, var(--green-d), var(--blue));
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .footer-copyright-sub {
+          font-size: 0.62rem; font-weight: 600;
+          color: var(--text-3);
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          margin-top: 3px;
+        }
+        .footer-copyright-hearts {
+          font-size: 0.62rem;
+          color: var(--text-3);
+          margin-top: 6px;
+          display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+        .footer-copyright-hearts em {
+          font-style: normal;
+          background: linear-gradient(90deg, var(--green), var(--blue-l));
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+          font-weight: 700;
+        }
+
+        /* ── Social row ── */
+        .footer-social-row {
+          display: flex; justify-content: center; gap: 10px;
+          margin-bottom: 16px;
+        }
+        .footer-social-btn {
+          width: 40px; height: 40px;
+          border-radius: 13px;
+          background: rgba(255,255,255,0.7);
+          border: 1px solid rgba(16,185,129,0.12);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 16px;
+          text-decoration: none;
+          box-shadow: 0 2px 10px rgba(15,31,46,0.05), inset 0 1px 0 rgba(255,255,255,0.9);
+          transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+          position: relative; overflow: hidden;
+        }
+        .footer-social-btn::before {
+          content: '';
+          position: absolute; inset: 0;
+          background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(37,99,235,0.08));
+          opacity: 0;
+          transition: opacity 0.2s;
+          border-radius: inherit;
+        }
+        .footer-social-btn:active {
+          transform: scale(0.93);
+          box-shadow: 0 1px 6px rgba(15,31,46,0.08);
+        }
+
+        /* status badge */
+        .footer-status-badge {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 6px 14px 6px 10px;
+          background: rgba(255,255,255,0.75);
+          border: 1px solid rgba(16,185,129,0.2);
+          border-radius: 100px;
+          font-size: 0.68rem; font-weight: 700;
+          color: var(--green-d);
+          box-shadow: 0 2px 12px rgba(16,185,129,0.1);
+          backdrop-filter: blur(8px);
+          margin: 0 auto 20px;
+          width: fit-content;
+          display: flex;
+        }
+        .footer-status-dot {
+          width: 7px; height: 7px; border-radius: 50%;
+          background: var(--green);
+          animation: dotPulse 2s ease-in-out infinite;
+        }
+
       `}</style>
 
       {/* Backgrounds */}
@@ -476,7 +718,7 @@ export default function AppLandingPage() {
               <img src="/logo.png" alt="SignTranslate" />
           </div>
          <h1 className="lp-name" style={{ 
-            fontSize: '1.6rem', // ขนาดกำลังดีสำหรับ Mobile ไม่ล้นแน่นอน
+            fontSize: '1.6rem',
             fontWeight: '900',
             letterSpacing: '-0.04em',
             color: '#0f172a',
@@ -491,6 +733,7 @@ export default function AppLandingPage() {
             }}>TRANSLATE</span>
           </h1>
         </section>
+
         {/* Slideshow */}
         <section className="lp-slider">
           <div className="lp-slide-window">
@@ -525,42 +768,82 @@ export default function AppLandingPage() {
           </Link>
         </div>
 
-        {/* Contact */}
-        <div className="lp-contact">
-          <div className="lp-contact-header">
-            <div className="lp-contact-icon-wrap">📬</div>
-            <span className="lp-contact-title">ติดต่อเรา</span>
-            <span className="lp-contact-sub">Contact Support</span>
-          </div>
-          <div className="lp-contact-list">
-            <a href="mailto:hello@signtranslate.ai" className="lp-clink">
-              <div className="lp-clink-icon" style={{background:"linear-gradient(135deg,#ecfdf5,#d1fae5)"}}>✉️</div>
-              <div className="lp-clink-text">
-                <b>Email Support</b>
-                <span>hello@signtranslate.ai</span>
-              </div>
-              <span className="lp-arrow">›</span>
-            </a>
-            <a href="#" className="lp-clink">
-              <div className="lp-clink-icon" style={{background:"linear-gradient(135deg,#f0fdf4,#dcfce7)"}}>💬</div>
-              <div className="lp-clink-text">
-                <b>LINE Official</b>
-                <span>@signtranslate</span>
-              </div>
-              <span className="lp-arrow">›</span>
-            </a>
-            <a href="#" className="lp-clink">
-              <div className="lp-clink-icon" style={{background:"linear-gradient(135deg,#eff6ff,#dbeafe)"}}>🌐</div>
-              <div className="lp-clink-text">
-                <b>Facebook Page</b>
-                <span>SignTranslate Thailand</span>
-              </div>
-              <span className="lp-arrow">›</span>
-            </a>
-          </div>
-        </div>
+        {/* ═══════════ ✨ PREMIUM FOOTER ═══════════ */}
+        <footer className="lp-footer">
 
-        <p className="lp-copy">© 2026 SignTranslate · Powered by Next.js · All rights reserved</p>
+          {/* Decorative divider */}
+          <div className="footer-divider">
+            <div className="footer-divider-line" />
+            <div className="footer-divider-gem" />
+            <div className="footer-divider-line" />
+          </div>
+
+          {/* Brand identity */}
+          <div className="footer-brand">
+            <div className="footer-brand-name">SignTranslate</div>
+            <div className="footer-brand-tagline">Bridging Silence with Intelligence</div>
+          </div>
+
+          {/* Live status */}
+          <div className="footer-status-badge">
+            <div className="footer-status-dot" />
+            All Systems Operational
+          </div>
+
+          {/* Contact cards */}
+          <div className="footer-contacts">
+            <a href="mailto:support@signtranslate.com" className="footer-contact-card email">
+              <div className="footer-card-icon-wrap email-icon">
+                <Mail size={20} color="#2563eb" strokeWidth={2} />
+              </div>
+              <div className="footer-card-label">อีเมล</div>
+              <div className="footer-card-value">support@signtranslate.com</div>
+            </a>
+            <a href="tel:0801234567" className="footer-contact-card phone">
+              <div className="footer-card-icon-wrap phone-icon">
+                <Phone size={20} color="#059669" strokeWidth={2} />
+              </div>
+              <div className="footer-card-label">โทรศัพท์</div>
+              <div className="footer-card-value">080-123-4567</div>
+            </a>
+          </div>
+
+          {/* Location row */}
+          <a href="#" className="footer-location">
+            <div className="footer-location-icon">📍</div>
+            <div className="footer-location-text">
+              <b>วิทยาลัยอาชีวศึกษาขอนแก่น, ขอนแก่น</b>
+              <span>Khon Kaen</span>
+            </div>
+            <div className="footer-location-arrow">›</div>
+          </a>
+
+          {/* Social buttons */}
+          <div className="footer-social-row" style={{ marginTop: 14 }}>
+            {[
+              { icon: "🌐", label: "Website" },
+              { icon: "📘", label: "Facebook" },
+              { icon: "📸", label: "Instagram" },
+              { icon: "🐙", label: "GitHub" },
+            ].map((s) => (
+              <a key={s.label} href="#" className="footer-social-btn" aria-label={s.label}>
+                {s.icon}
+              </a>
+            ))}
+          </div>
+
+          {/* Copyright banner */}
+          <div className="footer-copyright">
+            <div className="footer-copyright-year">
+              © <span>2026</span> SIGNTRANSLATE
+            </div>
+            <div className="footer-copyright-sub">All Rights Reserved</div>
+            <div className="footer-copyright-hearts">
+              Made with <em>♥</em> for the Deaf Community
+            </div>
+          </div>
+
+        </footer>
       </div>
     </>
   );
