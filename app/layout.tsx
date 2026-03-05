@@ -9,8 +9,11 @@ const k2d = K2D({
 });
 
 export const metadata: Metadata = {
-  title: "SignTranslate - แปลภาษามือด้วย AI", // เปลี่ยนเป็นชื่อที่อยากให้คนเห็น
+  title: "SignTranslate - แปลภาษามือด้วย AI",
   description: "ระบบแปลภาษามือแบบ Real-time เพื่อการสื่อสารที่ไร้พรมแดน",
+  icons: {
+    icon: "/favicon.png", // ตรวจสอบว่าชื่อไฟล์ตรงกับที่คุณมีในโฟลเดอร์ app หรือ public
+  },
 };
 
 export default function RootLayout({
