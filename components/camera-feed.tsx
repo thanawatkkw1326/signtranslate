@@ -130,7 +130,7 @@ function mouthOpenRatio(face: FaceLm[]): number {
 }
 
 function eyebrowRaised(face: FaceLm[]): boolean {
-  if (face.length < 340) return false
+  if (face.length < 337) return false
   const browY = (face[107].y + face[336].y) / 2
   const noseY = face[1].y
   return browY < noseY - 0.08
@@ -308,7 +308,8 @@ const SIGN_RULES: { sign: string; hint: string; rule: FullRule }[] = [
   { sign: "ไม่เข้าใจ", hint: "ท่าเข้าใจ แต่ส่ายหน้า",
     rule: (lm, face, pose) => {
       const nearForehead = getDist(lm[8], face[10]) < 0.15
-      const shakingHead = Math.abs(face[234].z ?? 0 - (face[454].z ?? 0)) < 0.04
+      if (face.length < 455) return 0
+      const shakingHead = Math.abs((face[234].z ?? 0) - (face[454].z ?? 0)) < 0.04
       return nearForehead && shakingHead ? 0.90 : 0
     }
   },
@@ -498,9 +499,11 @@ function classifyAll(
     const otherHistory = label === "Left" ? rightHistory : leftHistory
 
     for (const { sign, rule } of SIGN_RULES) {
-      const confidence = rule(lm, face, pose, otherHistory)
-      if (confidence >= MIN_CONFIDENCE && (!best || confidence > best.confidence))
-        best = { sign, confidence }
+      try {
+        const confidence = rule(lm, face, pose, otherHistory)
+        if (confidence >= MIN_CONFIDENCE && (!best || confidence > best.confidence))
+          best = { sign, confidence }
+      } catch { /* face/pose landmark ไม่ครบ ข้ามไป */ }
     }
   }
 
@@ -643,9 +646,11 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
   const stopCamera = useCallback(() => {
     if (mpRef.current) {
       const { cam, holistic } = mpRef.current
-      mpRef.current = null
-      try { cam?.stop() } catch {}
-      try { holistic?.close() } catch {}
+      mpRef.current = null          // clear ref ก่อนเสมอ ป้องกัน onFrame ยิงหลัง destroy
+      try { cam?.stop() } catch {}  // หยุด camera loop
+      setTimeout(() => {            // delay เล็กน้อยให้ onFrame ที่ค้างอยู่ finish ก่อน
+        try { holistic?.close() } catch {}
+      }, 100)
     }
     faceRef.current = []
     poseRef.current = []
@@ -700,8 +705,15 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
         ctx.scale(-1, 1)
       }
 
-      // ─── FIX 3: วาด video frame ตรงๆ ไม่ต้อง letterbox scale ───
-      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height)
+      // ─── FIX 3: วาด video frame แบบ cover — เต็มกรอบ ไม่มีขอบว่าง ───
+      const imgW = results.image.width ?? results.image.videoWidth ?? canvas.width
+      const imgH = results.image.height ?? results.image.videoHeight ?? canvas.height
+      const scale = Math.max(canvas.width / imgW, canvas.height / imgH)
+      const drawW = imgW * scale
+      const drawH = imgH * scale
+      const offsetX = (canvas.width  - drawW) / 2
+      const offsetY = (canvas.height - drawH) / 2
+      ctx.drawImage(results.image, offsetX, offsetY, drawW, drawH)
 
       const multiHandLandmarks: Landmark[][] = []
       const multiHandedness: { label: string; score: number }[] = []
@@ -738,11 +750,15 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
 
       const W = canvas.width, H = canvas.height
 
+      // ─── helper: แปลง normalized landmark (0-1) → pixel บน canvas cover ───
+      const lmX = (nx: number) => offsetX + nx * drawW
+      const lmY = (ny: number) => offsetY + ny * drawH
+
       /* ══ วาด Face Mesh ══ */
       if (face.length > 0) {
         for (const pt of face) {
           ctx.beginPath()
-          ctx.arc(pt.x * W, pt.y * H, 1.2, 0, Math.PI * 2)
+          ctx.arc(lmX(pt.x), lmY(pt.y), 1.2, 0, Math.PI * 2)
           ctx.fillStyle = "rgba(147,210,200,0.28)"
           ctx.fill()
         }
@@ -763,9 +779,9 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
         for (const loop of FACE_CONTOURS) {
           if (loop.some(i => i >= face.length)) continue
           ctx.beginPath()
-          ctx.moveTo(face[loop[0]].x * W, face[loop[0]].y * H)
+          ctx.moveTo(lmX(face[loop[0]].x), lmY(face[loop[0]].y))
           for (let i = 1; i < loop.length; i++) {
-            ctx.lineTo(face[loop[i]].x * W, face[loop[i]].y * H)
+            ctx.lineTo(lmX(face[loop[i]].x), lmY(face[loop[i]].y))
           }
           ctx.stroke()
         }
@@ -784,8 +800,8 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
 
         for (const { idx, color, r, label } of KEY_LANDMARKS) {
           if (idx >= face.length) continue
-          const x = face[idx].x * W
-          const y = face[idx].y * H
+          const x = lmX(face[idx].x)
+          const y = lmY(face[idx].y)
 
           ctx.beginPath()
           ctx.arc(x, y, r + 4, 0, Math.PI * 2)
@@ -813,17 +829,17 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
         for (const lm of multiHandLandmarks) {
           ctx.strokeStyle = "rgba(96,165,250,0.72)"; ctx.lineWidth = 2.5
           for (const [a, b] of HAND_CONNS) {
-            ctx.beginPath(); ctx.moveTo(lm[a].x*W, lm[a].y*H); ctx.lineTo(lm[b].x*W, lm[b].y*H); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(lmX(lm[a].x), lmY(lm[a].y)); ctx.lineTo(lmX(lm[b].x), lmY(lm[b].y)); ctx.stroke()
           }
           for (const pt of lm) {
-            ctx.beginPath(); ctx.arc(pt.x*W, pt.y*H, 5, 0, Math.PI*2)
+            ctx.beginPath(); ctx.arc(lmX(pt.x), lmY(pt.y), 5, 0, Math.PI*2)
             ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.fill()
             ctx.strokeStyle = "rgba(59,130,246,0.9)"; ctx.lineWidth = 2; ctx.stroke()
           }
           for (const idx of [4,8,12,16,20]) {
-            ctx.beginPath(); ctx.arc(lm[idx].x*W, lm[idx].y*H, 10, 0, Math.PI*2)
+            ctx.beginPath(); ctx.arc(lmX(lm[idx].x), lmY(lm[idx].y), 10, 0, Math.PI*2)
             ctx.strokeStyle = "rgba(147,197,253,0.65)"; ctx.lineWidth = 2.5; ctx.stroke()
-            ctx.beginPath(); ctx.arc(lm[idx].x*W, lm[idx].y*H, 5.5, 0, Math.PI*2)
+            ctx.beginPath(); ctx.arc(lmX(lm[idx].x), lmY(lm[idx].y), 5.5, 0, Math.PI*2)
             ctx.fillStyle = "rgba(59,130,246,1)"; ctx.fill()
           }
         }
@@ -866,13 +882,16 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
     const cam = new (window as any).Camera(videoRef.current, {
       onFrame: async () => {
         if (!mpRef.current) return
+        const h = mpRef.current.holistic
+        if (!h) return
         try {
           const v = videoRef.current
-          if (v && v.videoWidth > 0) {
-            await holistic.send({ image: v })
+          if (v && v.videoWidth > 0 && v.readyState >= 2) {
+            await h.send({ image: v })
           }
-        } catch (error) {
-          console.warn("Wasm object deleted, skipping frame.", error)
+        } catch (error: any) {
+          if (error?.name === "BindingError") return // holistic ถูก destroy แล้ว ข้ามเงียบๆ
+          console.warn("MediaPipe error:", error)
         }
       },
       width: camWidth,
@@ -1050,12 +1069,7 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
         }
         @keyframes cfSheen { 0%,100%{left:-70%} 55%{left:130%} }
         .cf-start-btn:active { transform:scale(0.97); }
-        .cf-scanline {
-          position:absolute; left:0; right:0; height:2px; pointer-events:none;
-          background:linear-gradient(90deg,transparent,rgba(59,130,246,0.9) 50%,transparent);
-          box-shadow:0 0 22px rgba(59,130,246,0.7);
-          animation:scanline 3s linear infinite;
-        }
+
         .cf-result-box {
           border-radius:20px; min-height:100px;
           display:flex; align-items:center; justify-content:center; padding:24px;
@@ -1307,8 +1321,8 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
             {/* ─── FIX 6: ลบ transform scaleX(-1) ออก เพราะย้ายไปทำใน ctx แล้ว ─── */}
             <canvas
               ref={canvasRef}
-              className={`absolute inset-0 w-full h-full rounded-[22px] ${!cameraOn ? "hidden" : ""}`}
-              style={{ objectFit: "contain" }}
+              className={`absolute inset-0 rounded-[22px] ${!cameraOn ? "hidden" : ""}`}
+              style={{ width: "100%", height: "100%", display: cameraOn ? "block" : "none" }}
             />
 
             {/* Idle state */}
@@ -1325,7 +1339,6 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
             {/* Camera active overlays */}
             {cameraOn && (
               <>
-                <div className="cf-scanline" />
                 {[
                   { top:'14px', left:'14px',  borderTop:'3px', borderLeft:'3px',  borderRadius:'10px 0 0 0' },
                   { top:'14px', right:'14px', borderTop:'3px', borderRight:'3px', borderRadius:'0 10px 0 0' },
