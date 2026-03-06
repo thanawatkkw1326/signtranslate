@@ -796,7 +796,13 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
         multiHandedness.push({ label: "Left", score: 1.0 })
         const wrist = lm[0]
         const size = Math.sqrt(Math.pow(lm[0].x - lm[9].x, 2) + Math.pow(lm[0].y - lm[9].y, 2))
-        rightHandMemoryRef.current.push({ x: wrist.x, y: wrist.y, size, tip_x: lm[8].x, tip_y: lm[8].y })
+rightHandMemoryRef.current.push({ 
+  x: wrist.x, 
+  y: wrist.y, 
+  size, 
+  tip_x: lm[8].x,   // ปลายนิ้วชี้
+  tip_y: lm[8].y 
+})
         if (rightHandMemoryRef.current.length > 15) rightHandMemoryRef.current.shift()
         checkSigns(lm, face, pose, "Right Hand")
       } else {
