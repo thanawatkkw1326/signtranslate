@@ -605,7 +605,7 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
   const rightHandMemoryRef = useRef<HandFrame[]>([])
   const leftHandMemoryRef  = useRef<HandFrame[]>([])
   // ─── FIX: เก็บ facingMode ใน ref เพื่อใช้ใน onResults callback ───
-  const facingModeRef = useRef<"user"|"environment">("user")
+  const facingModeRef = useRef<"user"|"environment">("environment")
 
   const isMobile = useIsMobile()
 
@@ -615,7 +615,7 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
   const [confidence,     setConfidence]     = useState(0)
   const [isAnalyzing,    setIsAnalyzing]    = useState(false)
   const [isSpeaking,     setIsSpeaking]     = useState(false)
-  const [facingMode,     setFacingMode]     = useState<"user"|"environment">("user")
+  const [facingMode,     setFacingMode]     = useState<"user"|"environment">("environment")
   const [replyText,      setReplyText]      = useState("")
   const [isRecording,    setIsRecording]    = useState(false)
   const [replyVideoUrl,  setReplyVideoUrl]  = useState<string | null>(null)
@@ -656,6 +656,7 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
     poseRef.current = []
     streamRef.current?.getTracks().forEach(t => t.stop())
     streamRef.current = null
+    if (videoRef.current) videoRef.current.srcObject = null
     setCameraOn(false)
     setHandsActive(false)
     setTranslation("")
@@ -875,31 +876,46 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
       ctx.restore()
     })
 
-    // ─── FIX 4: ปรับ Camera resolution ให้ตรงกับ aspect ratio จริง ───
-    const camWidth  = isMobile ? 480 : 1280
-    const camHeight = isMobile ? 640 : 720
+    // ─── FIX 4: ไม่บังคับ resolution — ให้กล้องเลือก aspect ratio เอง ───
+    const isRear = facingModeRef.current === "environment"
+    const camWidth  = isRear ? 1280 : (isMobile ? 480 : 1280)
+    const camHeight = isRear ? 720  : (isMobile ? 640 : 720)
 
-    const cam = new (window as any).Camera(videoRef.current, {
-      onFrame: async () => {
-        if (!mpRef.current) return
-        const h = mpRef.current.holistic
-        if (!h) return
-        try {
-          const v = videoRef.current
-          if (v && v.videoWidth > 0 && v.readyState >= 2) {
-            await h.send({ image: v })
-          }
-        } catch (error: any) {
-          if (error?.name === "BindingError") return // holistic ถูก destroy แล้ว ข้ามเงียบๆ
-          console.warn("MediaPipe error:", error)
-        }
+    // ─── ใช้ getUserMedia โดยตรง เพื่อบังคับ facingMode ได้จริง ───
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: facingModeRef.current },
+        width:  { ideal: camWidth },
+        height: { ideal: camHeight },
       },
-      width: camWidth,
-      height: camHeight,
+      audio: false,
     })
 
-    mpRef.current = { holistic, cam }
-    cam.start()
+    const video = videoRef.current
+    if (!video) { stream.getTracks().forEach(t => t.stop()); return }
+    video.srcObject = stream
+    streamRef.current = stream
+    await video.play()
+
+    // loop ส่งเฟรมเข้า MediaPipe
+    let running = true
+    const loop = async () => {
+      while (running && mpRef.current) {
+        const v = videoRef.current
+        if (v && v.videoWidth > 0 && v.readyState >= 2) {
+          try { await holistic.send({ image: v }) } catch (e: any) {
+            if (e?.name === "BindingError") break
+          }
+        }
+        await new Promise(r => requestAnimationFrame(r))
+      }
+    }
+    loop()
+
+    mpRef.current = {
+      holistic,
+      cam: { stop: () => { running = false } },
+    }
   }, [speak, onTranslation, isMobile])
 
   const sendReply = useCallback((text: string) => {
@@ -1315,7 +1331,7 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
         <div className="cf-card" style={{ padding: 10, position:'relative' }}>
           <div
             className="cf-camera-bg relative rounded-[22px] overflow-hidden"
-            style={{ aspectRatio: isMobile ? "3/4" : "16/9" }}
+            style={{ aspectRatio: facingMode === "environment" ? "16/9" : (isMobile ? "3/4" : "16/9") }}
           >
             <video ref={videoRef} autoPlay playsInline muted className="hidden" />
             {/* ─── FIX 6: ลบ transform scaleX(-1) ออก เพราะย้ายไปทำใน ctx แล้ว ─── */}
