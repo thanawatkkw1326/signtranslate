@@ -573,11 +573,11 @@ function classifyAll(
   multiHandedness: { label: string; score: number }[],
   face: FaceLm[],
   pose: PoseLm[],
-  leftHistory: {x: number, y: number, size: number}[],
-  rightHistory: {x: number, y: number, size: number}[]
+leftHistory: HandFrame[],
+rightHistory: HandFrame[]
 ): SignResult | null {
-  let best: SignResult | null = null
-
+ let best: SignResult | null = null   // ← ต้องมีบรรทัดนี้
+ 
   for (let i = 0; i < multiHandLandmarks.length; i++) {
     const rawLm = multiHandLandmarks[i]
     if (rawLm.length < 21) continue
