@@ -773,22 +773,24 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
       const canvas = canvasRef.current; if (!canvas) return
       const ctx = canvas.getContext("2d")!
 
-      ctx.save()
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-
 // ✅ แทนด้วยอันนี้
 const src = results.image
-const vw = (src as any).videoWidth || (src as any).width || video.videoWidth || 640
-const vh = (src as any).videoHeight || (src as any).height || video.videoHeight || 480
+const vw = video.videoWidth || (src as any).videoWidth || (src as any).width || 640
+const vh = video.videoHeight || (src as any).videoHeight || (src as any).height || 480
 if (canvas.width !== vw || canvas.height !== vh) {
   canvas.width  = vw
   canvas.height = vh
 }
 ctx.clearRect(0, 0, canvas.width, canvas.height)
-ctx.save()
-ctx.scale(-1, 1)
-ctx.drawImage(src, -canvas.width, 0, canvas.width, canvas.height)
-ctx.restore()
+if (facingMode === "user") {
+  ctx.save()
+  ctx.translate(canvas.width, 0)
+  ctx.scale(-1, 1)
+  ctx.drawImage(src, 0, 0, canvas.width, canvas.height)
+  ctx.restore()
+} else {
+  ctx.drawImage(src, 0, 0, canvas.width, canvas.height)
+}
 ctx.save()
 
       const multiHandLandmarks: Landmark[][] = []
