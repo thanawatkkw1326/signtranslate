@@ -577,7 +577,7 @@ leftHistory: HandFrame[],
 rightHistory: HandFrame[]
 ): SignResult | null {
  let best: SignResult | null = null   // ← ต้องมีบรรทัดนี้
- 
+
   for (let i = 0; i < multiHandLandmarks.length; i++) {
     const rawLm = multiHandLandmarks[i]
     if (rawLm.length < 21) continue
@@ -776,13 +776,20 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
       ctx.save()
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      const src = results.image
-      const sw = src.width ?? src.videoWidth ?? canvas.width
-      const sh = src.height ?? src.videoHeight ?? canvas.height
-      const scale = Math.max(canvas.width / sw, canvas.height / sh)
-      const dw = sw * scale; const dh = sh * scale
-      const dx = (canvas.width - dw) / 2; const dy = (canvas.height - dh) / 2
-      ctx.drawImage(src, dx, dy, dw, dh)
+// ✅ แทนด้วยอันนี้
+const src = results.image
+const vw = (src as any).videoWidth || (src as any).width || video.videoWidth || 640
+const vh = (src as any).videoHeight || (src as any).height || video.videoHeight || 480
+if (canvas.width !== vw || canvas.height !== vh) {
+  canvas.width  = vw
+  canvas.height = vh
+}
+ctx.clearRect(0, 0, canvas.width, canvas.height)
+ctx.save()
+ctx.scale(-1, 1)
+ctx.drawImage(src, -canvas.width, 0, canvas.width, canvas.height)
+ctx.restore()
+ctx.save()
 
       const multiHandLandmarks: Landmark[][] = []
       const multiHandedness: { label: string; score: number }[] = []
@@ -1489,7 +1496,7 @@ rightHandMemoryRef.current.push({
             <canvas
               ref={canvasRef} width={1280} height={720}
               className={`absolute inset-0 w-full h-full rounded-[22px] ${!cameraOn ? "hidden" : ""}`}
-              style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none", objectFit: "cover" }}
+ style={{ objectFit: "contain" }}
             />
 
             {/* Idle state */}
@@ -1503,11 +1510,6 @@ rightHandMemoryRef.current.push({
               </div>
             )}
 
-            {/* Camera active overlays */}
-            {cameraOn && (
-              <>
-                {/* Scan line */}
-                <div className="cf-scanline" />
 
                 {/* Corner brackets */}
                 {[
@@ -1554,8 +1556,6 @@ rightHandMemoryRef.current.push({
                     <IconCameraOff size={12} />ปิดกล้อง
                   </button>
                 </div>
-              </>
-            )}
           </div>
         </div>
 
