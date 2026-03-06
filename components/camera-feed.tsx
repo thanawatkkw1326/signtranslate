@@ -601,6 +601,8 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
   const poseRef       = useRef<PoseLm[]>([])
   const rightHandMemoryRef = useRef<HandFrame[]>([])
   const leftHandMemoryRef  = useRef<HandFrame[]>([])
+  // ─── FIX: เก็บ facingMode ใน ref เพื่อใช้ใน onResults callback ───
+  const facingModeRef = useRef<"user"|"environment">("user")
 
   const isMobile = useIsMobile()
 
@@ -679,16 +681,27 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
       const canvas = canvasRef.current; if (!canvas) return
       const ctx = canvas.getContext("2d")!
 
+      // ─── FIX 1: sync canvas resolution กับ video จริงทุก frame ───
+      const vid = videoRef.current
+      if (vid && vid.videoWidth > 0) {
+        if (canvas.width !== vid.videoWidth || canvas.height !== vid.videoHeight) {
+          canvas.width  = vid.videoWidth
+          canvas.height = vid.videoHeight
+        }
+      }
+
       ctx.save()
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      const src = results.image
-      const sw = src.width ?? src.videoWidth ?? canvas.width
-      const sh = src.height ?? src.videoHeight ?? canvas.height
-      const scale = Math.max(canvas.width / sw, canvas.height / sh)
-      const dw = sw * scale; const dh = sh * scale
-      const dx = (canvas.width - dw) / 2; const dy = (canvas.height - dh) / 2
-      ctx.drawImage(src, dx, dy, dw, dh)
+      // ─── FIX 2: ย้าย mirror flip จาก CSS มาทำใน ctx แทน ───
+      // เพื่อให้ landmark วาดตรงกับภาพจริงเสมอ
+      if (facingModeRef.current === "user") {
+        ctx.translate(canvas.width, 0)
+        ctx.scale(-1, 1)
+      }
+
+      // ─── FIX 3: วาด video frame ตรงๆ ไม่ต้อง letterbox scale ───
+      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height)
 
       const multiHandLandmarks: Landmark[][] = []
       const multiHandedness: { label: string; score: number }[] = []
@@ -846,6 +859,10 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
       ctx.restore()
     })
 
+    // ─── FIX 4: ปรับ Camera resolution ให้ตรงกับ aspect ratio จริง ───
+    const camWidth  = isMobile ? 480 : 1280
+    const camHeight = isMobile ? 640 : 720
+
     const cam = new (window as any).Camera(videoRef.current, {
       onFrame: async () => {
         if (!mpRef.current) return
@@ -858,12 +875,13 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
           console.warn("Wasm object deleted, skipping frame.", error)
         }
       },
-      width: 1280, height: 720,
+      width: camWidth,
+      height: camHeight,
     })
 
     mpRef.current = { holistic, cam }
     cam.start()
-  }, [speak, onTranslation])
+  }, [speak, onTranslation, isMobile])
 
   const sendReply = useCallback((text: string) => {
     if (!text.trim()) return
@@ -905,6 +923,11 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
     setConfidence(0)
     await startMP()
   }, [startMP])
+
+  // ─── FIX 5: sync facingMode state → ref เพื่อให้ onResults อ่านค่าล่าสุดได้ ───
+  useEffect(() => {
+    facingModeRef.current = facingMode
+  }, [facingMode])
 
   /* ─── RENDER ─── */
   return (
@@ -1281,10 +1304,11 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
             style={{ aspectRatio: isMobile ? "3/4" : "16/9" }}
           >
             <video ref={videoRef} autoPlay playsInline muted className="hidden" />
+            {/* ─── FIX 6: ลบ transform scaleX(-1) ออก เพราะย้ายไปทำใน ctx แล้ว ─── */}
             <canvas
-              ref={canvasRef} width={1280} height={720}
+              ref={canvasRef}
               className={`absolute inset-0 w-full h-full rounded-[22px] ${!cameraOn ? "hidden" : ""}`}
-              style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none", objectFit: "cover" }}
+              style={{ objectFit: "contain" }}
             />
 
             {/* Idle state */}
@@ -1326,7 +1350,13 @@ export function CameraFeed({ onTranslation, recentTranslations }: CameraFeedProp
 
                 <div style={{ position:'absolute', bottom:14, right:14, display:'flex', alignItems:'center', gap:8 }}>
                   <button
-                    onClick={() => { const nm = facingMode === "user" ? "environment" : "user"; setFacingMode(nm); stopCamera(); setTimeout(startCamera, 300) }}
+                    onClick={() => {
+                      const nm = facingMode === "user" ? "environment" : "user"
+                      setFacingMode(nm)
+                      facingModeRef.current = nm
+                      stopCamera()
+                      setTimeout(startCamera, 300)
+                    }}
                     className="cf-flip-btn"
                   >
                     <IconFlip size={12} />สลับ
